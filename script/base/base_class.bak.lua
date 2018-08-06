@@ -1,5 +1,3 @@
-require "base/override_function"
-
 -- 保存类类型的虚表
 local _class = {}
  
@@ -78,6 +76,25 @@ function BaseClass(super)
     return class_type
 end
 
+-- 动态加载
+-- local parentG = {}
+-- local requireList = NewModelFile or {}
+-- local loading_module_list = {}
+-- setmetatable(_G, parentG)
+-- parentG.__index = function(t, k)
+--     local require_name = requireList[k]
+--     -- print("加载", require_name, k)
+--     if require_name and not loading_module_list[require_name] then
+--        requireList[k] = nil
+--        loading_module_list[require_name] = true
+--        local load_state = require (require_name)
+--        if type(load_state) == "boolean" then
+--            return _G[k]
+--        else
+--            return load_state
+--        end
+--     end
+-- end
 
 requireList = requireList or {}
 ClassToFile = ClassToFile or {}
@@ -91,6 +108,7 @@ parentG.__index = function(t, k)
         ClassToFile[k] = nil
         loading_module_list[require_name] = true
         if _require (require_name) then
+            -- print("配置啊", UtilsBase.TableLen(requireList), UtilsBase.TableLen(ClassToFile), require_name, k)
             return _G[k]
         else
             return false
@@ -99,6 +117,7 @@ parentG.__index = function(t, k)
 end
 
 
+-- 这个虚表重启的时候要清掉，不然越来越大
 function clearSuperClass()
     print("clearSuperClass")
     _class = {}
