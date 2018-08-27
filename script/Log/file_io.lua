@@ -1,4 +1,4 @@
-require "anxin1225_lua_behaviour_tree.Log.base_class"
+require "script.base.base_class"
 
 FileIO = FileIO or BaseClass()
 
@@ -21,8 +21,8 @@ end
 
 function FileIO:Write(file_name, obj)
     -- self.file[file_name]:Write(tostring(obj))
-    self.file[file_name] = 1
-    
+    local file
+    self:GetFile("main")
 end
 
 
