@@ -1,5 +1,3 @@
-require "script.base.base_class"
-
 FileIO = FileIO or BaseClass()
 
 function FileIO:__init()

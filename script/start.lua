@@ -20,7 +20,7 @@ GetPath = function ()
     end
 end
 
-print(GetPath())
+-- print(GetPath())
 
 
 local Base = {}
@@ -68,8 +68,8 @@ function Base.SimplePrint2(obj, readed, print_func, parent, key, level)
 end
 
 
-Base.SimplePrint2(package.path)
+-- Base.SimplePrint2(package.path)
 
-print(string.find("1111111", "1", -1))
+-- print(string.find("1111111", "1", -1))
 
-Base.SimplePrint2(debug.getinfo(1))
+-- Base.SimplePrint2(debug.getinfo(1))
