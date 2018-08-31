@@ -42,7 +42,7 @@ function RectangularCoordinateSystem.GetQuadrant(angle)
     end
 end
 
-local system = RectangularCoordinateSystem
-local v2 = Vector2(100, 100)
-local v2_result = system.TranslateVector2(0, 30, v2)
-print(v2_result[1], v2_result[2])
+-- local system = RectangularCoordinateSystem
+-- local v2 = Vector2(100, 100)
+-- local v2_result = system.TranslateVector2(0, 30, v2)
+-- print(v2_result[1], v2_result[2])
