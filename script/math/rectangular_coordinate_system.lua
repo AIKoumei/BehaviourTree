@@ -22,22 +22,22 @@ end
 
 -- 返回各个象限 45度角 的向量
 function RectangularCoordinateSystem.GetQuadrant(angle)
-    local quadrant = (angle % 360) / 90
-    if quadrant < 1 then
+    local quadrant = (angle % 360)
+    if quadrant < 90 then
         return Vector2(1, 1)
-    elseif quadrant == 1 then
+    elseif quadrant == 90 then
         return Vector2(0, 1)
-    elseif quadrant < 2 then
+    elseif quadrant < 180 then
         return Vector2(-1, 1)
-    elseif quadrant == 2 then
+    elseif quadrant == 180 then
         return Vector2(-1, 0)
-    elseif quadrant < 3 then
+    elseif quadrant < 270 then
         return Vector2(-1, -1)
-    elseif quadrant == 3 then
+    elseif quadrant == 270 then
         return Vector2(0, -1)
-    elseif quadrant < 4 then
+    elseif quadrant < 360 then
         return Vector2(1, -1)
-    elseif quadrant == 4 then
+    elseif quadrant == 360 then
         return Vector2(1, 0)
     end
 end
