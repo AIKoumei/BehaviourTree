@@ -9,7 +9,7 @@ end
 -- 打印待分隔符的标题
 function PrintUtil.LogPrint(title)
     print("================================================")
-    print(string.format("== # %s", title))
+    print(string.format("== # %s", title or ""))
     print("================================================")
 end
 
