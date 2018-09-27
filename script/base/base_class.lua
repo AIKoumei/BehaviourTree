@@ -1,4 +1,4 @@
-require "base/override_function"
+require "base.class_to_file"
 
 -- 保存类类型的虚表
 local _class = {}
