@@ -57,7 +57,7 @@ end
 -----------------------------------------------
 function TableUtil.Len(tab)
     local len = 0
-    for _, __ in pairs(tab) do
+    for _, __ in pairs(tab or {}) do
         len = len + 1
     end
     return len
