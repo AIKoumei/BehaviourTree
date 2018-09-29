@@ -1,7 +1,7 @@
 -----------------------------------------------
 -- # 用于方便操作表的工具类
 -----------------------------------------------
-TableUtil = TableUtil or BaseClass()
+TableUtil = TableUtil or {}
 
 -- 会将表完整地打印出来，不包括function和userdata
 function TableUtil.Print(tab, no_tab)
@@ -49,4 +49,16 @@ function TableUtil.Print(tab, no_tab)
         level = level - 1
     end
     return table.concat(stack, no_tab and "" or "\n")
+end
+
+
+-----------------------------------------------
+-- # table 信息获取
+-----------------------------------------------
+function TableUtil.Len(tab)
+    local len = 0
+    for _, __ in pairs(tab) do
+        len = len + 1
+    end
+    return len
 end
