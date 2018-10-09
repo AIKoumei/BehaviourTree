@@ -24,7 +24,7 @@ function PrintUtil.SimplePrint(obj, str_format, ...)
         if readed[obj] then return end
         if type(obj) == "table" then
             for k,v in pairs(obj) do
-                _print(v, "[table][%s][%s]", k, v)
+                _print(v, "[%s][%s][%s]", tostring(obj), k, (type(v) == "string") and string.format("\"%s\"", v) or v)
             end
         else
             if str_format then

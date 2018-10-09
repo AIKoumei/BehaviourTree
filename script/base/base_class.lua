@@ -76,6 +76,14 @@ function BaseClass(super)
     return class_type
 end
 
+function InstanceOfClass(class, classname)
+    if not class.super then return tostring(class) == tostring(classname) end
+    local super = class
+    while super do
+        if tostring(class) == tostring(classname) then return true end
+        super = super.super
+    end
+end
 
 requireList = requireList or {}
 ClassToFile = ClassToFile or {}

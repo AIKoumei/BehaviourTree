@@ -11,3 +11,28 @@
     例如，玩家开局于太原历20年，在人生中创建了一个势力A，在下一局，势力A依然会延续（如果没有被干掉），NPC的状态、关系会延续，世界依旧在运行，玩家只不过是其中的一个人而已。
 
 核心玩法
+
+
+
+
+
+
+
+
+数据结构
+【NPC】
+-- 个人信息
+name:名称
+equipment_list:装备中的装备列表
+backpack:背包类
+-- 个人状态
+head
+body
+left_hand
+right_hand
+left_leg
+right_leg
+buff_list
+
+数据黑板
+SocialInterpersonalRelationship:人际关系

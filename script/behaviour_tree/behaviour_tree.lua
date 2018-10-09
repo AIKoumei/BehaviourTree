@@ -1,3 +1,6 @@
+require "behaviour_tree.behaviour_tree_node"
+require "behaviour_tree.behaviour_tree_action_node"
+
 BehaviourTree = BehaviourTree or BaseClass()
 
 -- 节点类型枚举
@@ -36,6 +39,23 @@ BehaviourTree.NodeTypeEnum = {
     }
 }
 
+BehaviourTree.NodeClassEnum = {
+    [BehaviourTree.NodeTypeEnum.Decorator.Invert] = "",
+    [BehaviourTree.NodeTypeEnum.Decorator.UntilSuccess] = "",
+    [BehaviourTree.NodeTypeEnum.Decorator.UntilFailure] = "",
+    [BehaviourTree.NodeTypeEnum.Decorator.Limit] = "",
+    [BehaviourTree.NodeTypeEnum.Decorator.TimeLimit] = "",
+    -- [BehaviourTree.NodeTypeEnum.Decorator.Parallel] = "",
+    [BehaviourTree.NodeTypeEnum.Composite.Selector] = "",
+    [BehaviourTree.NodeTypeEnum.Composite.RandomSelector] = "",
+    [BehaviourTree.NodeTypeEnum.Composite.Sequence] = "",
+    -- [BehaviourTree.NodeTypeEnum.Parallel.AnySuccess] = "",
+    -- [BehaviourTree.NodeTypeEnum.Parallel.AllSuccess] = "",
+    -- [BehaviourTree.NodeTypeEnum.Parallel.AnyResult] = "",
+    [BehaviourTree.NodeTypeEnum.Leaf.Action] = "",
+    [BehaviourTree.NodeTypeEnum.Leaf.Condition] = "",
+}
+
 -- 节点执行结果枚举
 BehaviourTree.RunTimeResultEnum = {
     Running = "RunTimeResultEnum.Running"
@@ -44,7 +64,7 @@ BehaviourTree.RunTimeResultEnum = {
 }
 
 BehaviourTree.FunctionEnum = {
-    BehaviourTree.NodeTypeEnum.Action = "Run"
+    [BehaviourTree.NodeTypeEnum.Leaf.Action] = "Run"
 }
 
 function BehaviourTree:__init()
@@ -58,8 +78,27 @@ end
 function BehaviourTree:__delete()
 end
 
-function BehaviourTree.Run(node)
-    local func = node[BehaviourTree.FunctionEnum[node:GetNodeType()]]
-    if func then return func(node) 
-    else return BehaviourTree.RunTimeResultEnum.Failed end
+function BehaviourTree.Run(node, entity)
+    -- local func = node[BehaviourTree.FunctionEnum[node:GetNodeType()]]
+    -- if func then return func(node) 
+    -- else return BehaviourTree.RunTimeResultEnum.Failed end
+    return node:Run(entity)
+end
+
+------------------------------------------------
+-- # 创建节点
+------------------------------------------------
+-- args :   node_type, parent_node, childs
+function BehaviourTree.CreateNode(args)
+    local class = BehaviourTree.NodeClassEnum[args.node_type]
+    if class and class.New then
+        return class.New(args)
+    end
+end
+
+------------------------------------------------
+-- # 测试
+------------------------------------------------
+function BehaviourTree.Test()
+    -- local root = BehaviourTree.CreateNode()
 end

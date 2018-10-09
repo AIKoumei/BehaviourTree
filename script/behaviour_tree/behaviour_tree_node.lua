@@ -44,10 +44,13 @@ function BehaviourTreeNode:GetChilds()
 end
 
 function BehaviourTreeNode:ToString()
-    return 
+    return ""
 end
 
 ------------------------------------------------
 -- # 方法
 ------------------------------------------------
 -- 执行方法
+function BehaviourTreeNode:Run()
+    return BehaviourTree.RunTimeResultEnum.Succeed
+end

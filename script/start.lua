@@ -8,8 +8,13 @@ require "util.table_util"
 require "util.file_util"
 require "test.test_one"
 
+require "behaviour_tree.behaviour_tree"
+
 function start()
     FileUtil.Init()
+
+    local path = GetPath()
+    PrintUtil.SimplePrint(debug.getinfo(1))
 end
 
 start()
