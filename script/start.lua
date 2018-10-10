@@ -1,3 +1,7 @@
+-- TODO
+-- <1>  理解、实现行为树
+-- <2>  自动 require 文件
+
 require "base.base_class"
 require "base.class_to_file"
 require "base.config"
@@ -11,6 +15,9 @@ require "test.test_one"
 require "behaviour_tree.behaviour_tree"
 
 function start()
+    -- 改进种子
+    math.randomseed(tostring(os.time()):reverse():sub(1, 6))
+    
     FileUtil.Init()
 
     local path = GetPath()

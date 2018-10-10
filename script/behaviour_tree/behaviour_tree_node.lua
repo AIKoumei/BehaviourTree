@@ -43,6 +43,23 @@ function BehaviourTreeNode:GetChilds()
     return self.childs
 end
 
+function BehaviourTreeNode:GetNextChild(node)
+    local pre_node
+    for _, child in ipairs(self.childs) do
+        if pre_node == node then
+            return child
+        end
+        pre_node = child
+    end
+end
+
+function BehaviourTreeNode:IsChilds(node)
+    for _, child in ipairs(self.childs) do
+        if child == node then return true end
+    end
+    return false
+end
+
 function BehaviourTreeNode:ToString()
     return ""
 end
@@ -51,6 +68,11 @@ end
 -- # 方法
 ------------------------------------------------
 -- 执行方法
-function BehaviourTreeNode:Run()
+function BehaviourTreeNode:Run(entity)
     return BehaviourTree.RunTimeResultEnum.Succeed
+end
+
+-- 接受运行结果
+-- 当节点运行完毕，返回给父节点的时候，调用该方法，更新下次运行的节点
+function BehaviourTreeNode:ReciveRunResult(entity, running_node, result)
 end

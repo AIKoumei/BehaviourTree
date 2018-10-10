@@ -40,39 +40,64 @@ BehaviourTree.NodeTypeEnum = {
 }
 
 BehaviourTree.NodeClassEnum = {
+    [BehaviourTree.NodeTypeEnum.Decorator] = "",
     [BehaviourTree.NodeTypeEnum.Decorator.Invert] = "",
     [BehaviourTree.NodeTypeEnum.Decorator.UntilSuccess] = "",
     [BehaviourTree.NodeTypeEnum.Decorator.UntilFailure] = "",
     [BehaviourTree.NodeTypeEnum.Decorator.Limit] = "",
     [BehaviourTree.NodeTypeEnum.Decorator.TimeLimit] = "",
     -- [BehaviourTree.NodeTypeEnum.Decorator.Parallel] = "",
-    [BehaviourTree.NodeTypeEnum.Composite.Selector] = "",
+    [BehaviourTree.NodeTypeEnum.Composite] = "BehaviourTreeCompositeNode",
+    [BehaviourTree.NodeTypeEnum.Composite.Selector] = "BehaviourTreeCompositeSelectorNode",
     [BehaviourTree.NodeTypeEnum.Composite.RandomSelector] = "",
     [BehaviourTree.NodeTypeEnum.Composite.Sequence] = "",
     -- [BehaviourTree.NodeTypeEnum.Parallel.AnySuccess] = "",
     -- [BehaviourTree.NodeTypeEnum.Parallel.AllSuccess] = "",
     -- [BehaviourTree.NodeTypeEnum.Parallel.AnyResult] = "",
+    [BehaviourTree.NodeTypeEnum.Leaf] = "",
     [BehaviourTree.NodeTypeEnum.Leaf.Action] = "",
     [BehaviourTree.NodeTypeEnum.Leaf.Condition] = "",
 }
 
 -- 节点执行结果枚举
 BehaviourTree.RunTimeResultEnum = {
-    Running = "RunTimeResultEnum.Running"
-    , Failed = "RunTimeResultEnum.Failed"
-    , Succeed = "RunTimeResultEnum.Succeed"
+    Running = "RunTimeResultEnum.Running",
+    Failed = "RunTimeResultEnum.Failed",
+    Succeed = "RunTimeResultEnum.Succeed",
 }
 
 BehaviourTree.FunctionEnum = {
     [BehaviourTree.NodeTypeEnum.Leaf.Action] = "Run"
 }
 
+
+------------------------------------------------
+-- # 参数声明
+------------------------------------------------
+-- 数据黑板
+BehaviourTree.__blackboard = BehaviourTree.__blackboard or {}
+BehaviourTree.__blackboard_id_cache = BehaviourTree.__blackboard_id_cache or {}
+BehaviourTree.Config = {
+    -- 数据黑板
+    Blackboard = {
+        -- 黑板初始大小
+        max_id = 1000,
+        -- 当 hash 获取 id 失败的时候，扩张 max_id 的大小
+        id_plus_step = 10,
+        -- 预留，最大扩张 id
+        max_extend_id = 100000,
+    }
+}
+
+
+------------------------------------------------
+-- # 初始化
+------------------------------------------------
 function BehaviourTree:__init()
     if BehaviourTree.Instance then
         return 
     end
     BehaviourTree.Instance = self
-
 end
 
 function BehaviourTree:__delete()
@@ -86,11 +111,51 @@ function BehaviourTree.Run(node, entity)
 end
 
 ------------------------------------------------
+-- # 数据存取
+------------------------------------------------
+-- 数据黑板
+function BehaviourTree.GetBlackboard()
+    return BehaviourTree.__blackboard
+end
+
+-- 根据 id 获取黑板数据
+function BehaviourTree.GetBlackboardData(data)
+    return BehaviourTree.__blackboard[data.__blackboard_id]
+end
+
+-- 根据 id 获取黑板数据
+function BehaviourTree.GetBlackboardDataById(id)
+    return BehaviourTree.__blackboard[id]
+end
+
+-- 获取黑板数据 id
+function BehaviourTree.GetBlackboardDataId(data)
+    return data.__blackboard_id
+end
+
+function BehaviourTree.SetBlackboardData(data)
+    local max_id = BehaviourTree.Config.Blackboard.max_id
+    --
+    local bbdata = BehaviourTreeBlackboardData.New()
+    bbdata.data = data
+    -- gen id
+    local id = math.random(1, max_id)
+    while (BehaviourTree.__blackboard_id_cache[id]) do
+        max_id = max_id + BehaviourTree.Config.Blackboard.id_plus_step
+        id = math.random(1, max_id)
+    end
+    data.__blackboard_id = id
+    BehaviourTree.__blackboard[id] = data
+    --
+    BehaviourTree.Config.Blackboard.max_id = max_id
+end
+
+------------------------------------------------
 -- # 创建节点
 ------------------------------------------------
 -- args :   node_type, parent_node, childs
 function BehaviourTree.CreateNode(args)
-    local class = BehaviourTree.NodeClassEnum[args.node_type]
+    local class = _G[BehaviourTree.NodeClassEnum[args.node_type]]
     if class and class.New then
         return class.New(args)
     end

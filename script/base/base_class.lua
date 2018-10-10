@@ -76,11 +76,12 @@ function BaseClass(super)
     return class_type
 end
 
+-- 是否是该类或者该类的子类
 function InstanceOfClass(class, classname)
-    if not class.super then return tostring(class) == tostring(classname) end
+    if not class.super then return class == _G(classname) end
     local super = class
     while super do
-        if tostring(class) == tostring(classname) then return true end
+        if class == _G(classname) then return true end
         super = super.super
     end
 end
