@@ -20,8 +20,15 @@ function start()
     
     FileUtil.Init()
 
-    local path = GetPath()
-    PrintUtil.SimplePrint(debug.getinfo(1))
+    -- local path = GetPath()
+    -- PrintUtil.SimplePrint(debug.getinfo(1))
+    -- local aaa = function()
+    --     return {{1}, {2}}
+    -- end
+
+    BehaviourTree.New()
+    PrintUtil.SimplePrint(BehaviourTree.NodeClassEnum)
+    BehaviourTree.Test()
 end
 
 start()

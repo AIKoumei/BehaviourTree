@@ -10,5 +10,5 @@ function BehaviourTreeBlackboardData:__delete()
 end
 
 function BehaviourTreeBlackboardData:Reset()
-    
+    self.running_node = nil     -- 执行中的节点
 end

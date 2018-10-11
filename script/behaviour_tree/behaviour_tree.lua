@@ -1,5 +1,12 @@
+-- TODO
+-- <1> 设置打印等级
+
+require "behaviour_tree.behaviour_tree_blackboard_data"
 require "behaviour_tree.behaviour_tree_node"
-require "behaviour_tree.behaviour_tree_action_node"
+require "behaviour_tree.behaviour_tree_composite_node"
+require "behaviour_tree.behaviour_tree_composite_selector_node"
+require "behaviour_tree.behaviour_tree_leaf_node"
+require "behaviour_tree.behaviour_tree_leaf_action_node"
 
 BehaviourTree = BehaviourTree or BaseClass()
 
@@ -54,8 +61,8 @@ BehaviourTree.NodeClassEnum = {
     -- [BehaviourTree.NodeTypeEnum.Parallel.AnySuccess] = "",
     -- [BehaviourTree.NodeTypeEnum.Parallel.AllSuccess] = "",
     -- [BehaviourTree.NodeTypeEnum.Parallel.AnyResult] = "",
-    [BehaviourTree.NodeTypeEnum.Leaf] = "",
-    [BehaviourTree.NodeTypeEnum.Leaf.Action] = "",
+    [BehaviourTree.NodeTypeEnum.Leaf] = "BehaviourTreeLeafNode",
+    [BehaviourTree.NodeTypeEnum.Leaf.Action] = "BehaviourTreeLeafActionNode",
     [BehaviourTree.NodeTypeEnum.Leaf.Condition] = "",
 }
 
@@ -78,14 +85,16 @@ BehaviourTree.FunctionEnum = {
 BehaviourTree.__blackboard = BehaviourTree.__blackboard or {}
 BehaviourTree.__blackboard_id_cache = BehaviourTree.__blackboard_id_cache or {}
 BehaviourTree.Config = {
+    -- 调试打印
+    DebugPrint = true,
     -- 数据黑板
     Blackboard = {
         -- 黑板初始大小
-        max_id = 1000,
-        -- 当 hash 获取 id 失败的时候，扩张 max_id 的大小
-        id_plus_step = 10,
+        MaxId = 1000,
+        -- 当 hash 获取 id 失败的时候，扩张 MaxId 的大小
+        IdPlusStep = 10,
         -- 预留，最大扩张 id
-        max_extend_id = 100000,
+        MaxExtendId = 100000,
     }
 }
 
@@ -119,8 +128,8 @@ function BehaviourTree.GetBlackboard()
 end
 
 -- 根据 id 获取黑板数据
-function BehaviourTree.GetBlackboardData(data)
-    return BehaviourTree.__blackboard[data.__blackboard_id]
+function BehaviourTree.GetBlackboardData(entity)
+    return BehaviourTree.__blackboard[entity.__blackboard_id]
 end
 
 -- 根据 id 获取黑板数据
@@ -134,36 +143,169 @@ function BehaviourTree.GetBlackboardDataId(data)
 end
 
 function BehaviourTree.SetBlackboardData(data)
-    local max_id = BehaviourTree.Config.Blackboard.max_id
+    local MaxId = BehaviourTree.Config.Blackboard.MaxId
     --
     local bbdata = BehaviourTreeBlackboardData.New()
     bbdata.data = data
     -- gen id
-    local id = math.random(1, max_id)
+    local id = math.random(1, MaxId)
     while (BehaviourTree.__blackboard_id_cache[id]) do
-        max_id = max_id + BehaviourTree.Config.Blackboard.id_plus_step
-        id = math.random(1, max_id)
+        MaxId = MaxId + BehaviourTree.Config.Blackboard.IdPlusStep
+        id = math.random(1, MaxId)
     end
     data.__blackboard_id = id
     BehaviourTree.__blackboard[id] = data
     --
-    BehaviourTree.Config.Blackboard.max_id = max_id
+    BehaviourTree.Config.Blackboard.MaxId = MaxId
 end
 
 ------------------------------------------------
 -- # 创建节点
 ------------------------------------------------
--- args :   node_type, parent_node, childs
+-- args :   name, node_type, parent_node, childs
 function BehaviourTree.CreateNode(args)
     local class = _G[BehaviourTree.NodeClassEnum[args.node_type]]
     if class and class.New then
         return class.New(args)
+    else
+        BehaviourTree.DebugPrint(string.format(" NodeType[%s] 创建失败", args.node_type))
+        BehaviourTree.DebugPrint(string.format("     BehaviourTree.NodeClassEnum -> %s", BehaviourTree.NodeClassEnum[args.node_type]))
+        BehaviourTree.DebugPrint(string.format("     _G[type] -> %s", _G[BehaviourTree.NodeClassEnum[args.node_type]]))
     end
+end
+
+-- args :   
+--      [1] or Run      : 运行方法，当运行该节点的时候调用
+--      [2] or Enter    : 进入方法，当进入该节点的时候调用
+--      [3] or Exit     : 离开方法，当离开该节点的时候调用
+--      [4] or result   : 默认返回值，不填为运行成功
+function BehaviourTree.CreateActionNode(args)
+    local class = _G[BehaviourTree.NodeClassEnum[BehaviourTree.NodeTypeEnum.Leaf.Action]]
+    if class and class.New then
+        return class.New(args)
+    else
+        BehaviourTree.DebugPrint(string.format(" NodeType[%s] 创建失败", BehaviourTree.NodeTypeEnum.Leaf.Action))
+        BehaviourTree.DebugPrint(string.format("     BehaviourTree.NodeClassEnum -> %s", BehaviourTree.NodeClassEnum[BehaviourTree.NodeTypeEnum.Leaf.Action]))
+        BehaviourTree.DebugPrint(string.format("     _G[type] -> %s", _G[BehaviourTree.NodeClassEnum[BehaviourTree.NodeTypeEnum.Leaf.Action]]))
+    end
+end
+
+------------------------------------------------
+-- # 调试
+------------------------------------------------
+function BehaviourTree.DebugPrint(msg)
+    print("[BehaviourTree Debug]", msg)
+end
+
+function BehaviourTree.DebugPrintInfo(msg)
+    print("[BehaviourTree Debug][Info]", msg)
 end
 
 ------------------------------------------------
 -- # 测试
 ------------------------------------------------
 function BehaviourTree.Test()
-    -- local root = BehaviourTree.CreateNode()
+    local root = BehaviourTree.CreateNode({
+        name = "root", 
+        node_type = BehaviourTree.NodeTypeEnum.Composite.Selector,
+    })
+
+    local enter_door = BehaviourTree.CreateNode({
+        name = "enter_door",
+        node_type = BehaviourTree.NodeTypeEnum.Composite.Selector,
+        OnEnter = function() 
+            print("我要进门")
+        end,
+    })
+    enter_door:SetParent(root)
+
+    local is_door_locked = BehaviourTree.CreateActionNode({
+        name = "is_door_locked",
+        OnEnter = function() 
+            print("我看下门锁了没有")
+        end,
+        Run = function() 
+            print("门锁上了")
+        end,
+        result = BehaviourTree.RunTimeResultEnum.Failed
+    })
+    is_door_locked:SetParent(enter_door)
+
+    local find_key = BehaviourTree.CreateNode({
+        name = "find_key",
+        node_type = BehaviourTree.NodeTypeEnum.Composite.Selector,
+        OnEnter = function() 
+            print("找钥匙")
+        end,
+        OnExit = function() 
+            print("不找钥匙了")
+        end,
+    })
+    local find_key_near_plant = BehaviourTree.CreateActionNode({
+        name = "find_key_near_plant",
+        OnEnter = function()
+            print("我记得我好像把备用钥匙放到花盆附近了")
+        end,
+        Run = function() 
+            print("花盆底下找不到钥匙")
+        end,
+        OnExit = function() 
+            print("不在花盆这里找钥匙了")
+        end,
+        result = BehaviourTree.RunTimeResultEnum.Failed
+    })
+    find_key_near_plant:SetParent(find_key)
+    local find_key_near_stage = BehaviourTree.CreateActionNode({
+        name = "find_key_near_stage",
+        OnEnter = function()
+            print("我记得我好像把备用钥匙放到台阶附近了")
+        end,
+        Run = function() 
+            print("台阶底下找不到钥匙")
+        end,
+        OnExit = function() 
+            print("不在台阶这里找钥匙了")
+        end,
+        result = BehaviourTree.RunTimeResultEnum.Failed
+    })
+    find_key_near_stage:SetParent(find_key)
+    find_key:SetParent(enter_door)
+
+    local through_the_wall = BehaviourTree.CreateActionNode({
+        name = "through_the_wall",
+        OnEnter = function()
+            print("还是翻墙进去吧...")
+        end,
+        Run = function() 
+            print("翻墙中...")
+        end,
+        result = BehaviourTree.RunTimeResultEnum.Failed
+    })
+    through_the_wall:SetParent(enter_door)
+
+    local break_the_wall = BehaviourTree.CreateActionNode({
+        name = "break_the_wall",
+        OnEnter = function()
+            print("还是爆破进去吧...")
+        end,
+        Run = function() 
+            print("爆破中...")
+        end,
+        result = BehaviourTree.RunTimeResultEnum.Succeed
+    })
+    break_the_wall:SetParent(enter_door)
+
+    PrintUtil.LogPrint("BehaviourTree Test")
+    local entity = {}
+    BehaviourTree.SetBlackboardData(entity)
+    local result, entity, node = root:Run(entity)
+    local limit_times = 1000
+    local times = 1
+    while(node and times <= limit_times) do
+        BehaviourTree.DebugPrint(string.format(" %s is running in one step, result : %s", node.name, result))
+        result, entity, node = root:Run(entity)
+        times = times + 1
+    end
+    print("times", times)
+    PrintUtil.LogPrint("BehaviourTree End")
 end

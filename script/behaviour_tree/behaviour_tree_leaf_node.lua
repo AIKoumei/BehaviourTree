@@ -1,0 +1,1 @@
+BehaviourTreeLeafNode = BehaviourTreeLeafNode or BaseClass(BehaviourTreeNode)
