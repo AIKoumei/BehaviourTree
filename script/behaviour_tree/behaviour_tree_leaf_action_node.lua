@@ -27,9 +27,23 @@ end
 ------------------------------------------------
 -- # 方法
 ------------------------------------------------
+-- -- 执行方法
+-- function BehaviourTreeLeafActionNode:Run(entity, callback)
+--     if callback then callback() end
+--     local data = BehaviourTree.GetBlackboardData(entity)
+--     -- 运行节点
+--     self:OnEnter()
+--     local result = self:run_func(entity, data)
+--     if self:CanDebugPrint() then
+--         BehaviourTree.DebugPrintInfo(string.format(" LeafNode<%s> run_func don't have result ", self.name))
+--     end
+--     result = result or self.result
+--     self:OnExit()
+--     return self:GetParent():ReciveRunResult(result, entity, self)
+-- end
+
 -- 执行方法
-function BehaviourTreeLeafActionNode:Run(entity, callback)
-    if callback then callback() end
+function BehaviourTreeLeafActionNode:Run(entity)
     local data = BehaviourTree.GetBlackboardData(entity)
     -- 运行节点
     self:OnEnter()
@@ -38,6 +52,7 @@ function BehaviourTreeLeafActionNode:Run(entity, callback)
         BehaviourTree.DebugPrintInfo(string.format(" LeafNode<%s> run_func don't have result ", self.name))
     end
     result = result or self.result
+    data.bt_running_node = self
+    data.bt_result = result
     self:OnExit()
-    return self:GetParent():ReciveRunResult(result, entity, self)
 end

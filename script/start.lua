@@ -26,9 +26,13 @@ function start()
     --     return {{1}, {2}}
     -- end
 
-    BehaviourTree.New()
-    PrintUtil.SimplePrint(BehaviourTree.NodeClassEnum)
-    BehaviourTree.Test()
+    -- BehaviourTree.New()
+    -- PrintUtil.SimplePrint(BehaviourTree.NodeClassEnum)
+    -- BehaviourTree.Test()
+
+    FileUtil.TestGlobalParam()
+    -- print(string.find("sadf4asf.lua.lua", ".lua", -string.len(".lua")))
+    -- print(string.match("   a = 1", "^%s*([%w_]*)%s*"))
 end
 
 start()

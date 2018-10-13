@@ -1,5 +1,6 @@
 -- TODO
 -- <1> 设置打印等级
+-- <2> 单次运行只执行一个节点
 
 require "behaviour_tree.behaviour_tree_blackboard_data"
 require "behaviour_tree.behaviour_tree_node"
@@ -113,6 +114,7 @@ function BehaviourTree:__delete()
 end
 
 function BehaviourTree.Run(node, entity)
+    local data = BehaviourTree.GetBlackboardData(entity)
     -- local func = node[BehaviourTree.FunctionEnum[node:GetNodeType()]]
     -- if func then return func(node) 
     -- else return BehaviourTree.RunTimeResultEnum.Failed end
@@ -180,14 +182,8 @@ end
 --      [3] or Exit     : 离开方法，当离开该节点的时候调用
 --      [4] or result   : 默认返回值，不填为运行成功
 function BehaviourTree.CreateActionNode(args)
-    local class = _G[BehaviourTree.NodeClassEnum[BehaviourTree.NodeTypeEnum.Leaf.Action]]
-    if class and class.New then
-        return class.New(args)
-    else
-        BehaviourTree.DebugPrint(string.format(" NodeType[%s] 创建失败", BehaviourTree.NodeTypeEnum.Leaf.Action))
-        BehaviourTree.DebugPrint(string.format("     BehaviourTree.NodeClassEnum -> %s", BehaviourTree.NodeClassEnum[BehaviourTree.NodeTypeEnum.Leaf.Action]))
-        BehaviourTree.DebugPrint(string.format("     _G[type] -> %s", _G[BehaviourTree.NodeClassEnum[BehaviourTree.NodeTypeEnum.Leaf.Action]]))
-    end
+    args.node_type = BehaviourTree.NodeTypeEnum.Leaf.Action
+    return BehaviourTree.CreateNode(args)
 end
 
 ------------------------------------------------
@@ -302,7 +298,7 @@ function BehaviourTree.Test()
     local limit_times = 1000
     local times = 1
     while(node and times <= limit_times) do
-        BehaviourTree.DebugPrint(string.format(" %s is running in one step, result : %s", node.name, result))
+        BehaviourTree.DebugPrint(string.format(" %s<%s> is running in one step, result : %s", node.node_type, node.name, result))
         result, entity, node = root:Run(entity)
         times = times + 1
     end

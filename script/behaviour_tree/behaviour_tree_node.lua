@@ -74,7 +74,7 @@ function BehaviourTreeNode:GetNextChild(node)
     end
 end
 
-function BehaviourTreeNode:IsChilds(node)
+function BehaviourTreeNode:ContainChild(node)
     for _, child in ipairs(self.childs) do
         if child == node then return true end
     end

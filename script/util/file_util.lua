@@ -12,7 +12,6 @@
 
 FileUtil = {}
 
--- 写入字符串
 function FileUtil.Init()
     -- FileUtil 的设置
     FileUtil.config = {}
@@ -27,6 +26,44 @@ function FileUtil.Init()
     FileUtil.file_key_list_attribute.key_cache = FileUtil.file_key_list_attribute.key_cache or {}
 end
 
+------------------------------------------------
+-- # 操作方法
+------------------------------------------------
+-- 获取该文件夹下所有文件
+-- TODO 增加后缀名支持
+-- args
+--      is_windows
+--      path
+--      ext
+FileUtil.GetAllFile = function(args)
+    if not args then return end
+    local output_buff = ""
+    local is_windows = args.is_windows
+    local path = args.path
+    if is_windows then
+        output_buff = io.popen("dir ")
+    else
+        output_buff = io.popen("ls "..path.."/")
+    end
+	local file_table = {}
+	if output_buff == nil then
+        print("[error] ls "..path.."/ do not have any files or folders.")
+    else
+        for l in output_buff:lines() do
+            print(l)
+            if ext then
+                table.insert(file_table, l)
+            else
+                table.insert(file_table, l)
+            end
+		end
+	end
+	return file_table
+end
+
+------------------------------------------------
+-- # 文件IO
+------------------------------------------------
 -- 写入字符串
 function FileUtil.Write(file_full_path_or_key, str)
     local file = FileUtil.GetFileCacheByKey(file_full_path_or_key)
@@ -113,6 +150,9 @@ function FileUtil.GetFileKeyByFullFileName(file, path, ext)
     return FileUtil.file_key_list[FileUtil.GetFullFileName(file, path, ext)]
 end
 
+------------------------------------------------
+-- # 测试
+------------------------------------------------
 function FileUtil.Test()
     PrintUtil.LogPrint("FileUtil.Test()")
     
@@ -136,4 +176,129 @@ function FileUtil.Test()
     PrintUtil.SimplePrint(FileUtil.file_key_list_attribute)
     
     PrintUtil.LogPrint("FileUtil.Test() end")
+end
+
+
+function FileUtil.TestGlobalParam()
+    -- 获得文件列表
+    local root = "."
+    local unread_file = {}
+    local lua_file = {}
+
+    local update_unread_files = function(unread, files, root_path)
+        for _,filename in ipairs(files) do
+            table.insert(unread, string.format("%s/%s", root_path, filename))
+        end
+    end
+    local update_lua_file = function(lua_file, filename)
+        local ext = ".lua"
+        if string.find(filename, ext, -string.len(ext)) then
+            table.insert(lua_file, filename)
+            return true
+        end
+    end
+    
+    local files = FileUtil.GetAllFile{
+        path = root
+    }
+    update_unread_files(unread_file, files, root)
+    local limited = 3000
+    local limit = 1
+    while (#unread_file > 0) and (limit < limited) do
+        local folder = table.remove(unread_file, #unread_file)
+        if not update_lua_file(lua_file, folder) then
+            update_unread_files(unread_file, FileUtil.GetAllFile({path = folder}), folder)
+        end
+        limit = limit + 1
+    end
+    PrintUtil.SimplePrint(lua_file)
+
+    -- 解析文件内容
+    local lua_key_param = {
+        ["and"] = true, ["break"] = true, ["do"] = true,
+        ["else"] = true, ["elseif"] = true, ["end"] = true,
+        ["false"] = true, ["for"] = true, ["function"] = true,
+        ["if"] = true, ["in"] = true, ["local"] = true,
+        ["nil"] = true, ["not"] = true, ["or"] = true,
+        ["repeat"] = true, ["return"] = true, ["then"] = true,
+        ["true"] = true, ["until"] = true, ["while"] = true,
+    }
+    local read_global_param = function(line)
+        local black_list_match = {
+            "^%s*.*%s*=%s*.*or%s*BaseClass"
+        }
+        -- 匹配黑名单
+        for _, match in ipairs(black_list_match) do
+            if string.match(line, match) then
+                return
+            end
+        end
+        local param = string.match(line, "^%s*([%w_]*)%s*")
+        if lua_key_param[param] then return end
+        if param == "" then return end
+        if string.match(param or "", "%.") then return end
+        return param
+    end
+    local read_local_param = function(line)
+        local param = string.match(line, "^%s*local%s*([%w_]*)%s*")
+        if lua_key_param[param] then return end
+        if param == "" then return end
+        if string.match(param or "", "%.") then return end
+        return param
+    end
+    local read_a_file = function(file, filename)
+        local function_info = {}
+        function_info.filename = filename
+        function_info.param = {}
+        function_info.local_param = {}
+        function_info.result = {}
+
+        local function_clip = {}
+        local line_num = 0
+        -- 分析每一行
+        for line in file:lines() do
+            line_num = line_num + 1
+            local param = read_local_param(line)
+            if param then
+                -- table.insert(function_info.local_param, param)
+                function_info.local_param[param] = param
+            end
+            local param = read_global_param(line)
+            if string.match(function_info.filename, ".*file_util.*") and line_num > 285 then
+                print("line:", line_num, "param:", param, "line", line)
+                
+                local black_list_match = {
+                    "^%s*.*%s*=%s*.*or%s*BaseClass"
+                }
+                -- 匹配黑名单
+                for _, match in ipairs(black_list_match) do
+                    if string.match(line, match) then
+                        return
+                    end
+                end
+                local param = string.match(line, "^%s*([%w_]*)%s*$")
+                if lua_key_param[param] then print(2) end
+                if param == "" then print(1) end
+            end
+            if param and not function_info.local_param[param] then
+                table.insert(function_info.result, string.format("line:%s    param:%s", line_num, param))
+            end
+        end
+        return function_info
+    end
+    a = 1
+
+    local function_infos = {}
+    for _, filename in ipairs(lua_file) do
+        local file = io.open(filename, "r")
+        function_infos[filename] = read_a_file(file, filename)
+    end
+    PrintUtil.LogPrint("function_infos result")
+    for _,info in pairs(function_infos) do
+        if #info.result > 0 or string.match(info.filename, ".*file_util.*") then
+            PrintUtil.LogPrint(info.filename)
+            -- PrintUtil.SimplePrint(info.local_param)
+            PrintUtil.SimplePrint(info.result)
+        end
+    end
 end
