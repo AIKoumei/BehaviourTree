@@ -50,7 +50,6 @@ FileUtil.GetAllFile = function(args)
         print("[error] ls "..path.."/ do not have any files or folders.")
     else
         for l in output_buff:lines() do
-            print(l)
             if ext then
                 table.insert(file_table, l)
             else
@@ -179,6 +178,10 @@ function FileUtil.Test()
 end
 
 
+------------------------------------------------
+-- # 其他杂项
+------------------------------------------------
+-- 虚拟机分析
 function FileUtil.TestGlobalParam()
     -- 获得文件列表
     local root = "."
@@ -302,3 +305,243 @@ function FileUtil.TestGlobalParam()
         end
     end
 end
+
+
+function FileUtil.TestParseLuaFile()
+    -- 获得文件列表
+    local root = "."
+    local unread_file = {}
+    local lua_file = {}
+
+    local update_unread_files = function(unread, files, root_path)
+        for _,filename in ipairs(files) do
+            table.insert(unread, string.format("%s/%s", root_path, filename))
+        end
+    end
+    local update_lua_file = function(lua_file, filename)
+        local ext = ".lua"
+        if string.find(filename, ext, -string.len(ext)) then
+            table.insert(lua_file, filename)
+            return true
+        end
+    end
+    
+    local files = FileUtil.GetAllFile{
+        path = root
+    }
+    update_unread_files(unread_file, files, root)
+    local limited = 3000
+    local limit = 1
+    while (#unread_file > 0) and (limit < limited) do
+        local folder = table.remove(unread_file, #unread_file)
+        if not update_lua_file(lua_file, folder) then
+            update_unread_files(unread_file, FileUtil.GetAllFile({path = folder}), folder)
+        end
+        limit = limit + 1
+    end
+    -- PrintUtil.SimplePrint(lua_file)
+
+    -- 解析文件内容
+    local lua_key_param = {
+        ["and"] = true, ["break"] = true, ["do"] = true,
+        ["else"] = true, ["elseif"] = true, ["end"] = true,
+        ["false"] = true, ["for"] = true, ["function"] = true,
+        ["if"] = true, ["in"] = true, ["local"] = true,
+        ["nil"] = true, ["not"] = true, ["or"] = true,
+        ["repeat"] = true, ["return"] = true, ["then"] = true,
+        ["true"] = true, ["until"] = true, ["while"] = true,
+    }
+    local read_a_file = function(file, filename)
+        local file_info = {}
+        file_info.filename = filename
+        file_info.param = {}
+        file_info.local_param = {}
+        file_info.functions = {}
+        file_info.result = {}
+
+        local function_clip = {}
+        local token_times = 0
+        local token, end_of_file, char = ReadToken(file)
+        -- print("token", token)
+        -- print("end_of_file", end_of_file)
+        -- print("char", char)
+        -- print("not end_of_file and not token", not end_of_file and not token)
+        while (not end_of_file) do
+            token_times = token_times + 1
+            -- 处理token
+            -- DoToken(file_info)
+            -- print("string.len(token)", string.len(token))
+            if token and token ~= "" and token ~= " " then
+                io.write(string.format("token:    %s", token) or "")
+                io.write(char and (char == "\n" or char == "\r") and char or "")
+                -- print("\n--------------", string.byte(token, 1, -1))
+                print()
+            end
+            token, end_of_file, char = ReadToken(file)
+        end
+        if end_of_file and token and token ~= "" then
+            print("token", token)
+            io.write(char and (char == "\n" or char == "\r") and char or "")
+            print()
+        end
+        print("token_times", token_times)
+        return function_info
+    end
+
+    local function_infos = {}
+    for _, filename in ipairs(lua_file) do
+        if string.find(filename, "start.lua") then
+            PrintUtil.LogPrint(filename)
+            local file = io.open(filename, "r")
+            function_infos[filename] = read_a_file(file, filename)
+        end
+    end
+    PrintUtil.LogPrint("function_infos result")
+    for _,info in pairs(function_infos) do
+        if #info.result > 0 or string.match(info.filename, ".*file_util.*") then
+            PrintUtil.LogPrint(info.filename)
+            -- PrintUtil.SimplePrint(info.local_param)
+            PrintUtil.SimplePrint(info.result)
+        end
+    end
+end
+
+TOKEN_TYPE = {
+    DEFAULT = 1,
+    ANNOTATION = 2,
+    STRING = 3,
+    FUNCTION = 4,
+}
+function ReadToken(file)
+    local token = ""
+    local token_type = TOKEN_TYPE.DEFAULT
+    local string_reading = false
+    local char = file:read(1)
+    while (char) do
+        -- print(char, string.byte(char))
+        local future_token = string.format("%s%s", token, char)
+        if (char == " " and string.len(token) == 0) and not string_reading then
+        elseif (char == " " and string.len(token) > 0) and not string_reading then
+            break
+        elseif (char == "\n" or string.byte(char) == 10) and not string_reading then
+            break
+        elseif (char == "\r" or string.byte(char) == 13) and not string_reading then
+            break
+        elseif char == "," and not string_reading then
+            break
+        else
+            -- parse token
+            if string.len(future_token) > 0 then
+                -- read string
+                -- if token is annotation
+                if string.match(future_token, "^%-%-") then
+                    string_reading = true
+                    if string.match(future_token, "^%-%-%[(=*)%[") then
+                        if string.match(future_token, "^%-%-%[(=*)%[%]%1%]") then
+                            token = future_token
+                            token_type = TOKEN_TYPE.ANNOTATION
+                            break
+                        end
+                    elseif char == "\n" or string.byte(char) == 10 then
+                        token = future_token
+                            token_type = TOKEN_TYPE.ANNOTATION
+                        break
+                    elseif char == "\r" or string.byte(char) == 13 then
+                        token = future_token
+                            token_type = TOKEN_TYPE.ANNOTATION
+                        break
+                    end
+                else
+                    -- if token is string
+                    if char == "\"" then
+                        string_reading = not string_reading
+                        -- 如果是 \" 这个恶心玩意，要取消修改
+                        if string.match(future_token, "\\\"$") then
+                            string_reading = not string_reading
+                        end
+                        -- read string end
+                        if not string_reading then
+                            token = future_token
+                            token_type = TOKEN_TYPE.STRING
+                            break
+                        end
+                    -- if specail char
+                    elseif not string_reading then
+                        if char == "(" then
+                            token = future_token
+                            break
+                        elseif char == ")"  then
+                        elseif char == "{" or char == "}" then
+                        end
+                    end
+                end
+            end
+            -- update token
+            token = future_token
+        end
+        -- read next char
+        char = file:read(1)
+    end
+    local end_of_file = not char
+    return token, end_of_file, char, token_type
+end
+
+LUA_KEY_PARAM = {
+    ["and"] = true,    ["break"] = true,    ["do"] = true,
+    ["else"] = true,    ["elseif"] = true,    ["end"] = true,
+    ["false"] = true,    ["for"] = true,    ["function"] = true,
+    ["if"] = true,    ["in"] = true,    ["local"] = true,
+    ["nil"] = true,    ["not"] = true,    ["or"] = true,
+    ["repeat"] = true,    ["return"] = true,    ["then"] = true,
+    ["true"] = true,    ["until"] = true,    ["while"] = true,
+}
+
+LUA_KEY_STR = {
+    AND = "and",            BREAK = "break",            DO = "do",
+    ELSE = "else",          ELSEIF = "elseif",          END = "end",
+    FALSE = "false",        FOR = "for",                FUNCTION = "function",
+    IF = "if",              IN = "in",                  LOCAL = "local",
+    NIL = "nil",            NOT = "not",                OR = "or",
+    REPEAT = "repeat",      RETURN = "return",          THEN = "then",
+    TRUE = "true",          UNTIL = "until",            WHILE = "while",
+
+    ADD = "+",              SUB = "-",                  MUL = "*",
+    DIV = "/",              MOD = "%",                  UNM = "-",
+    CONCAT = "..",          EQ = "==",                  LT = "<",
+    LE = "<=",              RT = ">",                   RE = ">=",
+    NE = "~=",              POW = "^",
+}
+
+LUA_OP_PARAM ={
+    ["+"] = true,    ["-"] = true,    ["*"] = true,
+    ["/"] = true,    ["%"] = true,    ["^"] = true,
+    ["="] = true,    ["<"] = true,    [">"] = true,
+    ["<="] = true,    [">="] = true,    ["~="] = true,
+    ["=="] = true,    [".."] = true,    ["#"] = true,
+}
+
+function DoToken(file, token, file_info, func_info)
+    file_info = func_info or file_info
+    local tk_key = false
+    local tk_name = false
+    local tk_val = false
+    local tk_function = false
+    if LUA_KEY_PARAM[token] then
+        -- if token = local 
+        if token = LUA_KEY.FUNCTION then
+            local func_info = {}
+            func_info.filename = file_info.filename
+            func_info.parent = file_info
+            func_info.args = {}
+            func_info.local_param = {}
+            func_info.functions = {}
+            func_info.result = {}
+            DoToken(file, nil, file_info, func_info)
+        elseif token == LUA_KEY.LOCAL then
+            local tokens = {}
+            local token = ReadToken(file)
+            while (token ~=)
+        end
+    end
+end
+

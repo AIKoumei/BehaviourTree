@@ -7,6 +7,7 @@ require "base.class_to_file"
 require "base.config"
 require "base.override_function"
 require "base.global_function"
+require "util.string_util"
 require "util.print_util"
 require "util.table_util"
 require "util.file_util"
@@ -30,9 +31,31 @@ function start()
     -- PrintUtil.SimplePrint(BehaviourTree.NodeClassEnum)
     -- BehaviourTree.Test()
 
-    FileUtil.TestGlobalParam()
+    -- FileUtil.TestGlobalParam()
     -- print(string.find("sadf4asf.lua.lua", ".lua", -string.len(".lua")))
     -- print(string.match("   a = 1", "^%s*([%w_]*)%s*"))
+
+    FileUtil.TestParseLuaFile()
+    -- print(string.match("--[==[]==]sadfsadfadsf", "^--%[(=*)%[%]%1%]"))
+    -- print(string.match("salkdfjlaskjfd\"", "\\\"$"))
+    if string.match("require \"base.base_class\"", "^--") then
+        print(string.match("require \"base.base_class\"", "^--"))
+    end
+    local str = "--r"
+    local mat = "^%-%-"
+    if string.match(str, mat) then
+        print("succeed", str, mat)
+    end
+    local str = ""
+    local mat = "^%-%-"
+    if string.match(str, mat) then
+        print("succeed", str, mat)
+    end
+    local str = ""
+    local mat = "^--"
+    if string.match(str, mat) then
+        print("succeed", str, mat)
+    end
 end
 
 start()
