@@ -354,9 +354,12 @@ function FileUtil.TestParseLuaFile()
     local read_a_file = function(file, filename)
         local file_info = {}
         file_info.filename = filename
-        file_info.param = {}
+        file_info.global_param = {}
         file_info.local_param = {}
         file_info.functions = {}
+        file_info.analyze_info = {
+            line_num = 0,
+        }
         file_info.result = {}
 
         local function_clip = {}
@@ -369,14 +372,14 @@ function FileUtil.TestParseLuaFile()
         while (not end_of_file) do
             token_times = token_times + 1
             -- 处理token
-            -- DoToken(file_info)
+            DoToken(file, token, file_info)
             -- print("string.len(token)", string.len(token))
-            if token and token ~= "" and token ~= " " then
-                io.write(string.format("token:    %s", token) or "")
-                io.write(char and (char == "\n" or char == "\r") and char or "")
-                -- print("\n--------------", string.byte(token, 1, -1))
-                print()
-            end
+            -- if token and token ~= "" and token ~= " " then
+            --     io.write(string.format("token:    %s", token) or "")
+            --     io.write(char and (char == "\n" or char == "\r") and char or "")
+            --     -- print("\n--------------", string.byte(token, 1, -1))
+            --     print()
+            -- end
             token, end_of_file, char = ReadToken(file)
         end
         if end_of_file and token and token ~= "" then
@@ -385,7 +388,7 @@ function FileUtil.TestParseLuaFile()
             print()
         end
         print("token_times", token_times)
-        return function_info
+        return file_info
     end
 
     local function_infos = {}
@@ -398,10 +401,15 @@ function FileUtil.TestParseLuaFile()
     end
     PrintUtil.LogPrint("function_infos result")
     for _,info in pairs(function_infos) do
-        if #info.result > 0 or string.match(info.filename, ".*file_util.*") then
+        -- if #info.result > 0 or string.match(info.filename, ".*file_util.*") then
+        --     PrintUtil.LogPrint(info.filename)
+        --     -- PrintUtil.SimplePrint(info.local_param)
+        --     PrintUtil.SimplePrint(info.result)
+        -- end
+        print("info.filename", info.filename)
+        if string.find(info.filename, "start.lua") then
             PrintUtil.LogPrint(info.filename)
-            -- PrintUtil.SimplePrint(info.local_param)
-            PrintUtil.SimplePrint(info.result)
+            PrintUtil.SimplePrint(info)
         end
     end
 end
@@ -419,10 +427,27 @@ function ReadToken(file)
     local char = file:read(1)
     while (char) do
         -- print(char, string.byte(char))
-        local future_token = string.format("%s%s", token, char)
-        if (char == " " and string.len(token) == 0) and not string_reading then
-        elseif (char == " " and string.len(token) > 0) and not string_reading then
+        local future_token = string.format("%s%s", token, string.match(char, "%s+") and "" or char)
+        if not string_reading and char == ' ' and string.len(char) > 0 then
             break
+        elseif not string_reading and char == '"' then
+            if string.len(token) > 0 then 
+                file:seek("cur", -1)
+                break
+            else
+                token = future_token
+                string_reading = true
+            end
+        elseif not string_reading and LUA_SP_CHAR[lua] and token == "" then
+            token = future_token
+            break
+        elseif not string_reading and LUA_SP_CHAR[char] then
+            if string.len(future_token) > 0 then 
+                if not LUA_SP_CHAR_SEEK_BLACKLIST[char] then 
+                    file:seek("cur", -1)
+                end
+                break
+            end
         elseif (char == "\n" or string.byte(char) == 10) and not string_reading then
             break
         elseif (char == "\r" or string.byte(char) == 13) and not string_reading then
@@ -453,7 +478,7 @@ function ReadToken(file)
                     end
                 else
                     -- if token is string
-                    if char == "\"" then
+                    if char == '"' then
                         string_reading = not string_reading
                         -- 如果是 \" 这个恶心玩意，要取消修改
                         if string.match(future_token, "\\\"$") then
@@ -467,10 +492,8 @@ function ReadToken(file)
                         end
                     -- if specail char
                     elseif not string_reading then
-                        if char == "(" then
-                            token = future_token
+                        if char == "(" or char == ")"  then
                             break
-                        elseif char == ")"  then
                         elseif char == "{" or char == "}" then
                         end
                     end
@@ -509,7 +532,7 @@ LUA_KEY_STR = {
     DIV = "/",              MOD = "%",                  UNM = "-",
     CONCAT = "..",          EQ = "==",                  LT = "<",
     LE = "<=",              RT = ">",                   RE = ">=",
-    NE = "~=",              POW = "^",
+    NE = "~=",              POW = "^",                  EVAL = "=",
 }
 
 LUA_OP_PARAM ={
@@ -520,27 +543,105 @@ LUA_OP_PARAM ={
     ["=="] = true,    [".."] = true,    ["#"] = true,
 }
 
+LUA_SP_CHAR ={
+    [','] = true,    ['/'] = true,    ['\\'] = true,
+    ['"'] = true,    ['('] = true,    [')'] = true,
+}
+
+LUA_SP_CHAR_SEEK_BLACKLIST = {
+    [','] = true,    ['('] = true,    [')'] = true,
+}
+
+local DoToken_limited = 1000
+local DoToken_limit = 1
 function DoToken(file, token, file_info, func_info)
-    file_info = func_info or file_info
+    if token and token ~= "" then
+        print("token", token)
+    end
+    if DoToken_limited < DoToken_limit then 
+        return
+    else
+        DoToken_limit = DoToken_limit + 1
+    end
+    local parent_info = func_info or file_info
+    local func_info = file_info or func_info
     local tk_key = false
     local tk_name = false
     local tk_val = false
     local tk_function = false
     if LUA_KEY_PARAM[token] then
         -- if token = local 
-        if token = LUA_KEY.FUNCTION then
+        if token == LUA_KEY_STR.FUNCTION then
             local func_info = {}
+            parent_info.functions[func_info] = func_info
             func_info.filename = file_info.filename
-            func_info.parent = file_info
             func_info.args = {}
+            func_info.global_param = file_info.global_param 
             func_info.local_param = {}
             func_info.functions = {}
-            func_info.result = {}
-            DoToken(file, nil, file_info, func_info)
-        elseif token == LUA_KEY.LOCAL then
+            func_info.analyze_info = file_info.analyze_info
+            func_info.result = file_info.result
+            -- 参数读取
+            local token, end_of_file, char, token_type = ReadToken(file)
+            DoToken(file, token, file_info, func_info)
+        elseif token == LUA_KEY_STR.LOCAL then
             local tokens = {}
-            local token = ReadToken(file)
-            while (token ~=)
+            local have_eval = false
+            local token, end_of_file, char, token_type = ReadToken(file)
+            while (token and token ~= "") do
+                print("> local token", token)
+                if token == LUA_KEY_STR.EVAL then
+                    have_eval = true
+                    break
+                elseif not LUA_SP_CHAR[token] then
+                    func_info.local_param[token] = token
+                end
+                token, end_of_file, char, token_type = ReadToken(file)
+            end
+            -- 如果
+            if have_eval then
+                local token, end_of_file, char, token_type = ReadToken(file)
+                while (token and token ~= "") do
+                    local result
+                    if (char == "\n" or string.byte(char) == 10) then
+                        result = DoToken(file, token, file_info, func_info)
+                        break
+                    elseif (char == "\r" or string.byte(char) == 13) then
+                        result = DoToken(file, token, file_info, func_info)
+                        break
+                    else
+                        result = DoToken(file, token, file_info, func_info)
+                    end
+                    token, end_of_file, char, token_type = ReadToken(file)
+                end
+            end
+            -- DoToken(file, token, file_info, func_info)
+        elseif token == LUA_KEY_STR.END then
+            return LUA_KEY_STR.END
+        end
+    else
+        -- 如果不是关键字
+        if string.match(token, "^%-%-") then
+            -- 如果是注释
+        elseif func_info.local_param[token] then
+            -- 如果是变量，查找局部变量
+            print("> local_param token name ", token)
+        elseif func_info.global_param[token] then
+            print("> global_param token name ", token)
+            table.insert(func_info.result, string.format("%s  line:%s, param:%s", func_info.filename, tostring(func_info.analyze_info.line_num), token))
+        else
+            if token and token ~= "" then
+                print("normal token name ", token)
+            end
+            -- 往上遍历查找是否有父节点的局部变量
+            local parent_info = func_info.parent
+            while (parent_info) do
+                if parent_info.local_param[token] then
+                    table.insert(func_info.result, string.format("%s  line:%s, param:%s", func_info.filename, tostring(func_info.analyze_info.line_num), token))
+                    break
+                end
+                parent_info = func_info.parent
+            end
         end
     end
 end

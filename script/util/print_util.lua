@@ -23,6 +23,7 @@ function PrintUtil.SimplePrint(obj, str_format, ...)
     local function _print(obj, str_format, ...)
         if readed[obj] then return end
         if type(obj) == "table" then
+            readed[obj] = true
             for k,v in pairs(obj) do
                 _print(v, "[%s][%s][%s]", tostring(obj), (type(k) == "string") and string.format("\"%s\"", k) or k, (type(v) == "string") and string.format("\"%s\"", v) or v)
             end

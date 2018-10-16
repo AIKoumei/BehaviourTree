@@ -54,8 +54,17 @@ function start()
     local str = ""
     local mat = "^--"
     if string.match(str, mat) then
-        print("succeed", str, mat)
+        print ("succeed", str, mat)
     end
+    local str = "asdf"
+    local mat = "%s+"
+    if string.match(str, mat) then
+        print ("succeed", str, mat)
+    end
+    
+    a = 1
+    local c
+
 end
 
 start()
