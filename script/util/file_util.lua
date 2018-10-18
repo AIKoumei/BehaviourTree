@@ -409,7 +409,10 @@ function FileUtil.TestParseLuaFile()
         print("info.filename", info.filename)
         if string.find(info.filename, "start.lua") then
             PrintUtil.LogPrint(info.filename)
-            PrintUtil.SimplePrint(info)
+            print("---------- global param")
+            PrintUtil.SimplePrint(info.global_param)
+            print("---------- result")
+            PrintUtil.SimplePrint(info.result)
         end
     end
 end
@@ -636,7 +639,7 @@ function DoToken(file, token, file_info, func_info)
             -- 往上遍历查找是否有父节点的局部变量
             local parent_info = func_info.parent
             while (parent_info) do
-                if parent_info.local_param[token] then
+                if parent_info.global_param[token] then
                     table.insert(func_info.result, string.format("%s  line:%s, param:%s", func_info.filename, tostring(func_info.analyze_info.line_num), token))
                     break
                 end

@@ -51,13 +51,13 @@ function start()
     if string.match(str, mat) then
         print("succeed", str, mat)
     end
-    local str = ""
-    local mat = "^--"
+    str = ""
+    mat = "^--"
     if string.match(str, mat) then
         print ("succeed", str, mat)
     end
-    local str = "asdf"
-    local mat = "%s+"
+    str = "asdf"
+    mat = "%s+"
     if string.match(str, mat) then
         print ("succeed", str, mat)
     end
