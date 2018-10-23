@@ -156,7 +156,8 @@ function BehaviourTree.SetBlackboardData(data)
         id = math.random(1, MaxId)
     end
     data.__blackboard_id = id
-    BehaviourTree.__blackboard[id] = data
+    bbdata.id = id
+    BehaviourTree.__blackboard[id] = bbdata
     --
     BehaviourTree.Config.Blackboard.MaxId = MaxId
 end

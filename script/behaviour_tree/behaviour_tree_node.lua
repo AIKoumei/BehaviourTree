@@ -74,11 +74,17 @@ function BehaviourTreeNode:GetNextChild(node)
     end
 end
 
+-- 子节点是否包含目标节点
 function BehaviourTreeNode:ContainChild(node)
     for _, child in ipairs(self.childs) do
         if child == node then return true end
     end
     return false
+end
+
+-- 当前节点是否与目标节点相邻
+function BehaviourTreeNode:NearBy(node)
+    return node ~= self and (not node:GetParent() or self ~= node:GetParent()) and not node:ContainChild(self)
 end
 
 function BehaviourTreeNode:ToString()

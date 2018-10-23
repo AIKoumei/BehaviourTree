@@ -82,3 +82,30 @@ BehaviourTreeCompositeSelectorNode = BehaviourTreeCompositeSelectorNode or BaseC
 --     self:OnExit()
 --     return result, entity, data.running_node
 -- end
+
+-- 执行方法
+-- 每次执行都讲结果保存
+function BehaviourTreeCompositeSelectorNode:Run(entity, callback)
+    if callback then callback() end
+    local data = BehaviourTree.GetBlackboardData(entity)
+    local childs = self:GetChilds()
+    -- 进入节点
+    self:OnEnter()
+    -- 运行节点
+    -- 2、现在应该不会这样了
+    -- -- 如果不是最近的节点，就运行黑板数据的节点
+    -- local node = data.running_node
+    -- if self:NearBy(node) then
+    --     self:DebugPrint(string.format("[Msg] Node<%s> is not nearby RunningNode<%s> ", self.name, node.name))
+    --     self:OnExit()
+    --     return node:Run(entity)
+    -- end
+    -- 根据结果决定，是返回，还是继续运行
+    local result = data.result
+    if result == BehaviourTree.RunTimeResultEnum.Failed then
+        -- 如果是失败
+        -- 如果上一个节点不是
+    end
+    -- 退出节点
+    self:OnExit()
+end

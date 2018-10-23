@@ -15,6 +15,14 @@ require "test.test_one"
 
 require "behaviour_tree.behaviour_tree"
 
+
+
+
+function Print(val, callback)
+    return val, callback()
+end
+
+
 function start()
     -- 改进种子
     math.randomseed(tostring(os.time()):reverse():sub(1, 6))
@@ -27,44 +35,47 @@ function start()
     --     return {{1}, {2}}
     -- end
 
-    -- BehaviourTree.New()
+    BehaviourTree.New()
     -- PrintUtil.SimplePrint(BehaviourTree.NodeClassEnum)
-    -- BehaviourTree.Test()
+    BehaviourTree.Test()
 
     -- FileUtil.TestGlobalParam()
     -- print(string.find("sadf4asf.lua.lua", ".lua", -string.len(".lua")))
     -- print(string.match("   a = 1", "^%s*([%w_]*)%s*"))
 
-    FileUtil.TestParseLuaFile()
-    -- print(string.match("--[==[]==]sadfsadfadsf", "^--%[(=*)%[%]%1%]"))
-    -- print(string.match("salkdfjlaskjfd\"", "\\\"$"))
-    if string.match("require \"base.base_class\"", "^--") then
-        print(string.match("require \"base.base_class\"", "^--"))
-    end
-    local str = "--r"
-    local mat = "^%-%-"
-    if string.match(str, mat) then
-        print("succeed", str, mat)
-    end
-    local str = ""
-    local mat = "^%-%-"
-    if string.match(str, mat) then
-        print("succeed", str, mat)
-    end
-    str = ""
-    mat = "^--"
-    if string.match(str, mat) then
-        print ("succeed", str, mat)
-    end
-    str = "asdf"
-    mat = "%s+"
-    if string.match(str, mat) then
-        print ("succeed", str, mat)
-    end
+    -- FileUtil.TestParseLuaFile()
+    -- -- print(string.match("--[==[]==]sadfsadfadsf", "^--%[(=*)%[%]%1%]"))
+    -- -- print(string.match("salkdfjlaskjfd\"", "\\\"$"))
+    -- if string.match("require \"base.base_class\"", "^--") then
+    --     print(string.match("require \"base.base_class\"", "^--"))
+    -- end
+    -- local str = "--r"
+    -- local mat = "^%-%-"
+    -- if string.match(str, mat) then
+    --     print("succeed", str, mat)
+    -- end
+    -- local str = ""
+    -- local mat = "^%-%-"
+    -- if string.match(str, mat) then
+    --     print("succeed", str, mat)
+    -- end
+    -- str = ""
+    -- mat = "^--"
+    -- if string.match(str, mat) then
+    --     print ("succeed", str, mat)
+    -- end
+    -- str = "asdf"
+    -- mat = "%s+"
+    -- if string.match(str, mat) then
+    --     print ("succeed", str, mat)
+    -- end
     
-    a = 1
-    local c
+    -- a = 1
+    -- local c
 
+    -- local a = Print(1, function ()
+    --     print(a)
+    -- end)
 end
 
 start()
